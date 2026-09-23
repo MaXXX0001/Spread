@@ -68,7 +68,7 @@ class Campaign extends Model
     {
         do {
             $alias = self::generateAlias();
-            $isTaken = self::query()->where('alias', $alias)->exists();
+            $isTaken = self::query()->where('alias', '=', $alias)->exists();
         } while ($isTaken);
 
         return $alias;

@@ -10,7 +10,8 @@
 - [x] 1.2 [РУЧНО, користувач] Створити `/home/max/projects/laradock/nginx/sites/85_spread.conf` із вмістом з design.md, розділ D9, і перезавантажити nginx: `docker exec laradock_all-nginx-1 nginx -t && docker exec laradock_all-nginx-1 nginx -s reload`. Перевірка: `nginx -t` пише `syntax is ok`; після задачі 2.1 `curl -sI -H 'Host: spread.local' http://localhost/` з WSL повертає `200`.
   - Конфіг створив агент за дозволом користувача (2026-09-24), за зразком сусідніх сайтів: додано `fastcgi_buffers`, `fastcgi_read_timeout` і блок `/.well-known/acme-challenge/`. `nginx -t` пройшов, nginx перезавантажено, сайти voyager і fisker відповідають 200. Лишилася перевірка на 200 після задачі 2.1.
   - Після задачі 2.1 (2026-09-24) `curl -sI -H 'Host: spread.local' http://localhost/` повертає `HTTP/1.1 200 OK`.
-- [ ] 1.3 [РУЧНО, користувач] Додати рядок `127.0.0.1 spread.local` у `C:\Windows\System32\drivers\etc\hosts` (редактор з правами адміністратора). Перевірка: у Windows `ping spread.local` резолвиться в `127.0.0.1`.
+- [x] 1.3 [РУЧНО, користувач] Додати рядок `127.0.0.1 spread.local` у `C:\Windows\System32\drivers\etc\hosts` (редактор з правами адміністратора). Перевірка: у Windows `ping spread.local` резолвиться в `127.0.0.1`.
+  - Запис додав користувач 2026-09-24, рядок `127.0.0.1 spread.local` є у файлі hosts.
 - [x] 1.4 З'ясувати, чому в `laradock_all-php-fpm-85-1` немає розширень `redis` і `pcntl`, і усунути прогалину з redis (див. design.md, D8).
   - Причина: у `laradock/php-fpm/Dockerfile` блок «PHP REDIS EXTENSION» був порожній. Його відновлено (бекап `php-fpm/Dockerfile.bak-2026-09-24`), образ перебудовано, контейнер перестворено (2026-09-24, з дозволу користувача).
   - Результат: PHP 8.5.10 + phpredis 6.3.0, `ping` до `redis` працює, сайт voyager відповідає 200. Predis не потрібен. pcntl у php-fpm вимкнено свідомо, бо Horizon працює у workspace-85.

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\ConfigSnapshot\ConfigSnapshotObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['name', 'traffic_source_id', 'offer_id', 'active'])]
+#[ObservedBy(ConfigSnapshotObserver::class)]
 class Campaign extends Model
 {
     private const ALIAS_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';

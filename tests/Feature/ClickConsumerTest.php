@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Clicks\ClickConsumer;
+use App\Clicks\GeoIp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\CountryMmdb;
 use Tests\TestCase;
 
 class ClickConsumerTest extends TestCase
@@ -153,6 +156,37 @@ class ClickConsumerTest extends TestCase
         }
     }
 
+    public function test_click_gets_country_from_geoip_database(): void
+    {
+        $path = sys_get_temp_dir().'/spread-geoip-'.uniqid().'.mmdb';
+        $database = CountryMmdb::build('US', 'ZZ');
+        File::put($path, $database);
+        $public = $this->message(['ip' => '8.8.8.8']);
+        $private = $this->message(['ip' => '172.18.0.1']);
+        $this->addMessage($public);
+        $this->addMessage($private);
+
+        $this->consumeOnce(new GeoIp($path));
+        File::delete($path);
+
+        $countries = DB::table('clicks')->pluck('country_code', 'click_id');
+
+        $this->assertSame('US', $countries[$public['click_id']]);
+        $this->assertNull($countries[$private['click_id']]);
+    }
+
+    public function test_missing_geoip_database_stores_click_without_country(): void
+    {
+        $this->addMessage($this->message(['ip' => '8.8.8.8']));
+
+        $this->consumeOnce(new GeoIp('/nonexistent/dbip-country-lite.mmdb'));
+
+        $click = DB::table('clicks')->first();
+
+        $this->assertNotNull($click);
+        $this->assertNull($click->country_code);
+    }
+
     public function test_redelivered_message_creates_one_click(): void
     {
         $message = $this->message();
@@ -275,9 +309,9 @@ class ClickConsumerTest extends TestCase
         $this->assertStreamDrained();
     }
 
-    private function consumeOnce(): void
+    private function consumeOnce(GeoIp $geoIp = new GeoIp): void
     {
-        $consumer = new ClickConsumer(self::CONSUMER);
+        $consumer = new ClickConsumer(self::CONSUMER, geoIp: $geoIp);
         $consumer->createGroup();
 
         $succeeded = $consumer->iterate();

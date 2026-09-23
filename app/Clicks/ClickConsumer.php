@@ -33,6 +33,7 @@ final class ClickConsumer
         public readonly string $consumer,
         public readonly int $minIdleMs = self::DEFAULT_MIN_IDLE_MS,
         private readonly DeviceDetection $deviceDetection = new DeviceDetection,
+        private readonly GeoIp $geoIp = new GeoIp,
     ) {}
 
     public function createGroup(): void
@@ -143,6 +144,7 @@ final class ClickConsumer
             $userAgent = $row['user_agent'] ?? '';
             $devicesByUserAgent[$userAgent] ??= $this->deviceDetection->detect($userAgent);
             $row += $devicesByUserAgent[$userAgent];
+            $row['country_code'] = $this->geoIp->country($row['ip']);
             $row['created_at'] = $createdAt;
             $rows[] = $row;
         }

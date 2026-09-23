@@ -5,11 +5,16 @@ namespace Tests\Feature;
 use App\Filament\Resources\Offers\Pages\CreateOffer;
 use App\Filament\Resources\Offers\Pages\EditOffer;
 use App\Filament\Resources\Offers\Pages\ListOffers;
+use App\Models\Campaign;
 use App\Models\CpaNetwork;
 use App\Models\Offer;
+use App\Models\TrafficSource;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Facades\Filament;
+use Filament\Notifications\Livewire\Notifications;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -200,5 +205,74 @@ class OfferResourceTest extends TestCase
             ->callAction(DeleteAction::class);
 
         $this->assertModelMissing($offer);
+    }
+
+    public function test_offer_with_campaigns_is_not_deleted_from_edit_page(): void
+    {
+        $offer = $this->createOfferWithCampaign('Nutra UA');
+
+        Livewire::test(EditOffer::class, ['record' => $offer->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('The offer has campaigns and cannot be deleted.');
+
+        $this->assertModelExists($offer);
+    }
+
+    public function test_bulk_delete_skips_offers_with_campaigns(): void
+    {
+        $usedOffer = $this->createOfferWithCampaign('Nutra UA');
+
+        $unusedOffer = Offer::create([
+            'name' => 'Nutra PL',
+            'cpa_network_id' => $this->network->id,
+            'url_template' => self::URL_TEMPLATE,
+        ]);
+
+        Livewire::test(ListOffers::class)
+            ->callTableBulkAction(DeleteBulkAction::class, [$usedOffer, $unusedOffer]);
+
+        $this->assertModelExists($usedOffer);
+        $this->assertModelMissing($unusedOffer);
+
+        $notifications = new Notifications;
+        $notifications->mount();
+
+        $notification = $notifications->notifications->sole();
+
+        $this->assertSame('Deleted 1 of 2', $notification->getTitle());
+        $this->assertStringContainsString('Offers with campaigns cannot be deleted.', $notification->getBody());
+    }
+
+    public function test_database_restricts_deleting_offer_with_campaigns(): void
+    {
+        $offer = $this->createOfferWithCampaign('Nutra UA');
+
+        $this->expectException(QueryException::class);
+
+        $offer->delete();
+    }
+
+    private function createOfferWithCampaign(string $name): Offer
+    {
+        $offer = Offer::create([
+            'name' => $name,
+            'cpa_network_id' => $this->network->id,
+            'url_template' => self::URL_TEMPLATE,
+        ]);
+
+        $source = TrafficSource::create([
+            'name' => 'PushHouse',
+            'macros' => [
+                ['param' => 'zone', 'macro' => '{zoneid}'],
+            ],
+        ]);
+
+        Campaign::create([
+            'name' => 'PH / Nutra UA',
+            'traffic_source_id' => $source->id,
+            'offer_id' => $offer->id,
+        ]);
+
+        return $offer;
     }
 }

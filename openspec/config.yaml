@@ -1,32 +1,39 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Spread — особистий трекер для арбітражу трафіку. Один користувач, один VPS, не SaaS.
+  Власник — middle Laravel-розробник, новий в affiliate-домені: артефакти коротко й простими
+  словами пояснюють доменні терміни (джерело трафіку, макрос, зона, креатив, CPA-мережа, оффер,
+  click_id, постбек). Словник термінів — docs/contract.md, план етапів — docs/roadmap.md.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Архітектура:
+  - Laravel — «мозок»: адмінка, оффери, кампанії, обробка кліків і конверсій, витрати, звіти, планувальник.
+  - Гарячий шлях (редірект, приймання постбеків) пишеться в Laravel як ІЗОЛЬОВАНИЙ шматок: без
+    Eloquent-моделей, без залежностей від решти застосунку, лише за docs/contract.md. Згодом переїжджає на Go.
+  - Laravel і Go спілкуються тільки через Redis і спільну БД. docs/contract.md змінюється лише свідомо,
+    у тому ж коміті, що й код.
+  - Назавжди поза межами: повний клон Keitaro/Binom; клоакінг чи будь-що для обходу модерації рекламних мереж.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Стек (вирішено): Laravel 13, PHP 8.5, Filament 5, Horizon 5.x, PostgreSQL, Redis (клієнт phpredis),
+  тести — PHPUnit. Усі часові мітки в UTC.
+
+  Локальне середовище: Laradock у WSL, ~/projects змонтовано в /var/www. Усі php/composer/artisan-команди:
+    docker exec -u laradock -w /var/www/Spread laradock_all-workspace-85-1 <cmd>
+  Хости всередині Docker: postgres (user default / password secret), redis. Веб: nginx-контейнер →
+  php-fpm-85:9000, конфіги сайтів у /home/max/projects/laradock/nginx/sites/. Laradock спільний з
+  іншими проєктами: перебудову контейнерів вирішує користувач.
+
+  Процес: мінімум коду, жодних фіч наперед роадмапу. Проза артефактів — українською; ідентифікатори,
+  код і коментарі в коді — англійською. Гілки: spec/propose/NN-slug, feature/NN-slug,
+  task/NN-slug/<what> (NN — номер етапу роадмапу). Git-команди агенти не виконують, а пропонують користувачу.
+
+rules:
+  proposal:
+    - Вказувати номер етапу роадмапу і що свідомо відкладено на наступні етапи.
+    - Нові доменні терміни пояснювати одним реченням простими словами.
+  design:
+    - Будь-що, що торкається гарячого шляху, звіряти з docs/contract.md і не змінювати контракт мовчки.
+  tasks:
+    - Кожна задача з кодом атомарна (одна task-гілка) і має конкретну перевірку командою через docker exec.
+    - Нефункціональні, інфраструктурні й ручні (які робить користувач) кроки — окремою групою з явною позначкою.
+    - Остання група — ручна перевірка критерію «Готово, коли» з роадмапу.

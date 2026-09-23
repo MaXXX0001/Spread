@@ -48,6 +48,22 @@ class Campaign extends Model
         return $this->belongsTo(Offer::class);
     }
 
+    /**
+     * Macros are joined as is: URL-encoding would turn {zoneid} into %7Bzoneid%7D and the ad network would not substitute it.
+     */
+    public function trackingUrl(): string
+    {
+        $trackerUrl = config('spread.tracker_url');
+        $baseUrl = rtrim($trackerUrl, '/');
+        $pairs = array_map(
+            fn (array $pair): string => $pair['param'].'='.$pair['macro'],
+            $this->trafficSource->macros,
+        );
+        $query = implode('&', $pairs);
+
+        return "{$baseUrl}/c/{$this->alias}?{$query}";
+    }
+
     private static function generateUniqueAlias(): string
     {
         do {

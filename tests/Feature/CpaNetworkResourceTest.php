@@ -6,9 +6,13 @@ use App\Filament\Resources\CpaNetworks\Pages\CreateCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Pages\EditCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Pages\ListCpaNetworks;
 use App\Models\CpaNetwork;
+use App\Models\Offer;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Facades\Filament;
+use Filament\Notifications\Livewire\Notifications;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -150,5 +154,63 @@ class CpaNetworkResourceTest extends TestCase
             ->callAction(DeleteAction::class);
 
         $this->assertModelMissing($network);
+    }
+
+    public function test_network_with_offers_is_not_deleted_from_edit_page(): void
+    {
+        $network = $this->createNetworkWithOffer('AdCombo');
+
+        Livewire::test(EditCpaNetwork::class, ['record' => $network->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('The network has offers and cannot be deleted.');
+
+        $this->assertModelExists($network);
+    }
+
+    public function test_bulk_delete_skips_networks_with_offers(): void
+    {
+        $usedNetwork = $this->createNetworkWithOffer('AdCombo');
+
+        $unusedNetwork = CpaNetwork::create([
+            'name' => 'Dr.Cash',
+        ]);
+
+        Livewire::test(ListCpaNetworks::class)
+            ->callTableBulkAction(DeleteBulkAction::class, [$usedNetwork, $unusedNetwork]);
+
+        $this->assertModelExists($usedNetwork);
+        $this->assertModelMissing($unusedNetwork);
+
+        $notifications = new Notifications;
+        $notifications->mount();
+
+        $notification = $notifications->notifications->sole();
+
+        $this->assertSame('Deleted 1 of 2', $notification->getTitle());
+        $this->assertStringContainsString('Networks with offers cannot be deleted.', $notification->getBody());
+    }
+
+    public function test_database_restricts_deleting_network_with_offers(): void
+    {
+        $network = $this->createNetworkWithOffer('AdCombo');
+
+        $this->expectException(QueryException::class);
+
+        $network->delete();
+    }
+
+    private function createNetworkWithOffer(string $name): CpaNetwork
+    {
+        $network = CpaNetwork::create([
+            'name' => $name,
+        ]);
+
+        Offer::create([
+            'name' => 'Nutra UA',
+            'cpa_network_id' => $network->id,
+            'url_template' => 'https://offer.example/lp?sub1={click_id}',
+        ]);
+
+        return $network;
     }
 }

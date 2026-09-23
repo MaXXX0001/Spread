@@ -32,6 +32,7 @@ final class ClickConsumer
     public function __construct(
         public readonly string $consumer,
         public readonly int $minIdleMs = self::DEFAULT_MIN_IDLE_MS,
+        private readonly DeviceDetection $deviceDetection = new DeviceDetection,
     ) {}
 
     public function createGroup(): void
@@ -124,6 +125,7 @@ final class ClickConsumer
     {
         $rows = [];
         $dead = [];
+        $devicesByUserAgent = [];
         $createdAt = now('UTC');
 
         foreach ($messages as $id => $fields) {
@@ -138,6 +140,9 @@ final class ClickConsumer
                 continue;
             }
 
+            $userAgent = $row['user_agent'] ?? '';
+            $devicesByUserAgent[$userAgent] ??= $this->deviceDetection->detect($userAgent);
+            $row += $devicesByUserAgent[$userAgent];
             $row['created_at'] = $createdAt;
             $rows[] = $row;
         }

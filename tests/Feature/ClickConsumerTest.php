@@ -87,8 +87,8 @@ class ClickConsumerTest extends TestCase
         $this->assertSame('https://ref.example/page', $click->referer);
         $this->assertSame(['zone' => '{zoneid}', 'creative' => ''], $params);
         $this->assertNull($click->country_code);
-        $this->assertNull($click->device_type);
-        $this->assertNull($click->os_name);
+        $this->assertSame('desktop', $click->device_type);
+        $this->assertSame('GNU/Linux', $click->os_name);
         $this->assertNull($click->browser_name);
         $this->assertFalse($click->is_bot);
         $this->assertFalse($click->is_duplicate);
@@ -104,6 +104,53 @@ class ClickConsumerTest extends TestCase
         $ip = DB::table('clicks')->value('ip');
 
         $this->assertNull($ip);
+    }
+
+    public function test_batch_stores_device_os_browser_and_bot_flag_per_user_agent(): void
+    {
+        $androidChrome = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36';
+        $userAgents = [
+            'android' => $androidChrome,
+            'googlebot' => 'Googlebot/2.1 (+http://www.google.com/bot.html)',
+            'null' => null,
+            'empty' => '',
+            'android again' => $androidChrome,
+        ];
+        $clickIds = [];
+
+        foreach ($userAgents as $label => $userAgent) {
+            $message = $this->message(['user_agent' => $userAgent]);
+            $clickIds[$label] = $message['click_id'];
+            $this->addMessage($message);
+        }
+
+        $this->consumeOnce();
+
+        $clicks = DB::table('clicks')->get()->keyBy('click_id');
+
+        foreach (['android', 'android again'] as $label) {
+            $click = $clicks[$clickIds[$label]];
+
+            $this->assertSame('smartphone', $click->device_type);
+            $this->assertSame('Android', $click->os_name);
+            $this->assertSame('14', $click->os_version);
+            $this->assertSame('Chrome Mobile', $click->browser_name);
+            $this->assertNotNull($click->browser_version);
+            $this->assertFalse($click->is_bot);
+        }
+
+        $this->assertTrue($clicks[$clickIds['googlebot']]->is_bot);
+
+        foreach (['null', 'empty'] as $label) {
+            $click = $clicks[$clickIds[$label]];
+
+            $this->assertTrue($click->is_bot);
+            $this->assertNull($click->device_type);
+            $this->assertNull($click->os_name);
+            $this->assertNull($click->os_version);
+            $this->assertNull($click->browser_name);
+            $this->assertNull($click->browser_version);
+        }
     }
 
     public function test_redelivered_message_creates_one_click(): void

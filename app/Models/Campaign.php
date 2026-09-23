@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'traffic_source_id', 'offer_id', 'active'])]
 #[ObservedBy(ConfigSnapshotObserver::class)]
@@ -49,6 +50,14 @@ class Campaign extends Model
     public function offer(): BelongsTo
     {
         return $this->belongsTo(Offer::class);
+    }
+
+    /**
+     * @return HasMany<Click, $this>
+     */
+    public function clicks(): HasMany
+    {
+        return $this->hasMany(Click::class);
     }
 
     /**

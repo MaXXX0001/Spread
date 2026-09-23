@@ -2,6 +2,8 @@
 
 namespace App\Clicks;
 
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Redis\Connections\Connection;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +28,8 @@ final class ClickConsumer
     private const int BATCH_SIZE = 500;
 
     private const int BLOCK_MS = 2000;
+
+    private const int DUPLICATE_WINDOW_SECONDS = 60;
 
     private string $claimCursor = '0-0';
 
@@ -150,6 +154,7 @@ final class ClickConsumer
         }
 
         DB::table('clicks')->insertOrIgnoreReturning($rows, ['click_id'], ['click_id']);
+        $this->flagDuplicates($rows);
 
         $redis = $this->redis();
 
@@ -160,6 +165,47 @@ final class ClickConsumer
         $ids = array_keys($messages);
         $redis->xack(self::STREAM_KEY, self::GROUP, $ids);
         $redis->xdel(self::STREAM_KEY, $ids);
+    }
+
+    /**
+     * Flags every click that has an earlier click with the same IP and User-Agent within the window.
+     *
+     * Candidates reach one window past the batch, so a later click stored before a delayed earlier one
+     * (redelivery, XAUTOCLAIM) is flagged too. All batch rows count, including ones already stored, so a
+     * batch that failed after its insert is flagged on redelivery. Clicks without an IP are never flagged.
+     *
+     * @param  list<array{clicked_at: string, ip: ?string}>  $rows
+     */
+    private function flagDuplicates(array $rows): void
+    {
+        $ipRows = array_filter($rows, fn (array $row): bool => $row['ip'] !== null);
+
+        if ($ipRows === []) {
+            return;
+        }
+
+        $ipColumn = array_column($ipRows, 'ip');
+        $ips = array_unique($ipColumn);
+        $clickedAts = array_column($ipRows, 'clicked_at');
+        $from = min($clickedAts);
+        $latest = max($clickedAts);
+        $to = CarbonImmutable::parse($latest, 'UTC')
+            ->addSeconds(self::DUPLICATE_WINDOW_SECONDS)
+            ->format('Y-m-d H:i:s.v');
+
+        DB::table('clicks as c')
+            ->where('c.is_duplicate', '=', false)
+            ->whereIn('c.ip', $ips)
+            ->whereBetween('c.clicked_at', [$from, $to])
+            ->whereExists(fn (Builder $query): Builder => $query
+                ->from('clicks as p')
+                ->whereColumn('p.ip', '=', 'c.ip')
+                ->whereRaw('p.user_agent is not distinct from c.user_agent')
+                ->whereRaw('p.clicked_at >= c.clicked_at - make_interval(secs => ?)', [self::DUPLICATE_WINDOW_SECONDS])
+                ->whereColumn('p.clicked_at', '<=', 'c.clicked_at')
+                // Earlier click: older timestamp, or the same millisecond and a smaller click_id.
+                ->whereRaw('(p.clicked_at, p.click_id) < (c.clicked_at, c.click_id)'))
+            ->update(['is_duplicate' => true]);
     }
 
     private function redis(): Connection

@@ -61,6 +61,14 @@ class Campaign extends Model
     }
 
     /**
+     * @return HasMany<Cost, $this>
+     */
+    public function costs(): HasMany
+    {
+        return $this->hasMany(Cost::class);
+    }
+
+    /**
      * Macros are joined as is: URL-encoding would turn {zoneid} into %7Bzoneid%7D and the ad network would not substitute it.
      */
     public function trackingUrl(): string

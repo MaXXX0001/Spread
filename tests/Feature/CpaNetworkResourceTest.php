@@ -5,15 +5,20 @@ namespace Tests\Feature;
 use App\Filament\Resources\CpaNetworks\Pages\CreateCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Pages\EditCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Pages\ListCpaNetworks;
+use App\Models\Conversion;
 use App\Models\CpaNetwork;
 use App\Models\Offer;
+use App\Models\Postback;
 use App\Models\User;
+use App\Postbacks\ConversionStatus;
+use App\Postbacks\PostbackState;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Facades\Filament;
 use Filament\Notifications\Livewire\Notifications;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -197,6 +202,79 @@ class CpaNetworkResourceTest extends TestCase
         $this->expectException(QueryException::class);
 
         $network->delete();
+    }
+
+    public function test_network_with_conversions_is_not_deleted_from_edit_page(): void
+    {
+        $network = $this->createNetworkWithConversion('AdCombo');
+
+        Livewire::test(EditCpaNetwork::class, ['record' => $network->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('The network has conversions and cannot be deleted.');
+
+        $this->assertModelExists($network);
+    }
+
+    public function test_bulk_delete_skips_networks_with_conversions(): void
+    {
+        $usedNetwork = $this->createNetworkWithConversion('AdCombo');
+
+        $unusedNetwork = CpaNetwork::create([
+            'name' => 'Dr.Cash',
+        ]);
+
+        Livewire::test(ListCpaNetworks::class)
+            ->callTableBulkAction(DeleteBulkAction::class, [$usedNetwork, $unusedNetwork]);
+
+        $this->assertModelExists($usedNetwork);
+        $this->assertModelMissing($unusedNetwork);
+
+        $notifications = new Notifications;
+        $notifications->mount();
+
+        $notification = $notifications->notifications->sole();
+
+        $this->assertSame('Deleted 1 of 2', $notification->getTitle());
+        $this->assertStringContainsString('Networks with conversions cannot be deleted', $notification->getBody());
+    }
+
+    public function test_network_with_only_postbacks_is_deleted(): void
+    {
+        $network = CpaNetwork::create([
+            'name' => 'AdCombo',
+        ]);
+
+        Postback::forceCreate([
+            'postback_id' => (string) Str::ulid(),
+            'received_at' => '2026-10-12 10:00:00.000',
+            'cpa_network_id' => $network->id,
+            'ip' => '198.51.100.7',
+            'params' => ['status' => 'paid'],
+            'state' => PostbackState::REJECTED,
+            'reason' => 'invalid_click_id',
+        ]);
+
+        Livewire::test(EditCpaNetwork::class, ['record' => $network->getRouteKey()])
+            ->callAction(DeleteAction::class);
+
+        $this->assertModelMissing($network);
+    }
+
+    private function createNetworkWithConversion(string $name): CpaNetwork
+    {
+        $network = CpaNetwork::create([
+            'name' => $name,
+        ]);
+
+        Conversion::forceCreate([
+            'click_id' => (string) Str::ulid(),
+            'cpa_network_id' => $network->id,
+            'status' => ConversionStatus::APPROVED,
+            'last_postback_at' => '2026-10-12 10:00:00.000',
+            'status_changed_at' => '2026-10-12 10:00:00.000',
+        ]);
+
+        return $network;
     }
 
     private function createNetworkWithOffer(string $name): CpaNetwork

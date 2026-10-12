@@ -44,6 +44,15 @@ class CpaNetworksTable
                                     return;
                                 }
 
+                                if ($record->conversions()->exists()) {
+                                    $action->reportBulkProcessingFailure(
+                                        'has_conversions',
+                                        'Networks with conversions cannot be deleted: conversions keep their network for reports.',
+                                    );
+
+                                    return;
+                                }
+
                                 $record->delete();
                             });
                         }),

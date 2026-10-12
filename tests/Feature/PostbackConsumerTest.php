@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Click;
 use App\Models\Conversion;
 use App\Models\CpaNetwork;
 use App\Models\Postback;
@@ -256,6 +257,64 @@ class PostbackConsumerTest extends TestCase
         $this->assertTrue($succeeded);
         $this->assertSame(2, Postback::query()->count());
         $this->assertStreamDrained();
+    }
+
+    public function test_orphan_gets_campaign_once_its_click_arrives(): void
+    {
+        $clickId = (string) Str::ulid();
+        $orphan = $this->createConversion($clickId);
+        $this->createClick($clickId, campaignId: 12, offerId: 5);
+
+        // An empty stream: linking runs on every iteration, not only with postbacks.
+        $this->consumeOnce();
+
+        $orphan->refresh();
+
+        $this->assertSame(12, $orphan->campaign_id);
+        $this->assertSame(5, $orphan->offer_id);
+    }
+
+    public function test_linking_leaves_conversions_without_click_and_linked_ones_alone(): void
+    {
+        $withoutClick = $this->createConversion((string) Str::ulid());
+        $linkedClickId = (string) Str::ulid();
+        $linked = $this->createConversion($linkedClickId, campaignId: 7, offerId: 3);
+        $this->createClick($linkedClickId, campaignId: 12, offerId: 5);
+
+        $this->consumeOnce();
+
+        $withoutClick->refresh();
+        $linked->refresh();
+
+        $this->assertNull($withoutClick->campaign_id);
+        $this->assertNull($withoutClick->offer_id);
+        $this->assertSame(7, $linked->campaign_id);
+        $this->assertSame(3, $linked->offer_id);
+    }
+
+    private function createConversion(string $clickId, ?int $campaignId = null, ?int $offerId = null): Conversion
+    {
+        return Conversion::forceCreate([
+            'click_id' => $clickId,
+            'cpa_network_id' => $this->network->id,
+            'campaign_id' => $campaignId,
+            'offer_id' => $offerId,
+            'status' => 'lead',
+            'last_postback_at' => '2026-10-12 10:00:00.000',
+            'status_changed_at' => '2026-10-12 10:00:00.000',
+        ]);
+    }
+
+    private function createClick(string $clickId, int $campaignId, int $offerId): void
+    {
+        Click::forceCreate([
+            'click_id' => $clickId,
+            'clicked_at' => '2026-10-12 09:00:00.000',
+            'status' => 'ok',
+            'campaign_id' => $campaignId,
+            'offer_id' => $offerId,
+            'params' => [],
+        ]);
     }
 
     private function consumeOnce(): void

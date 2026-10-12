@@ -74,6 +74,8 @@ final class PostbackConsumer
             if ($messages !== []) {
                 $this->process($messages);
             }
+
+            $this->linkOrphans();
         } catch (QueryException|RedisException $exception) {
             Log::error('Postback batch failed; its messages stay pending.', ['exception' => $exception]);
 
@@ -225,6 +227,23 @@ final class PostbackConsumer
                 'state' => PostbackState::FAILED->value,
                 'reason' => "{$exceptionClass}: {$exception->getMessage()}",
                 'processed_at' => Carbon::now('UTC'),
+            ]);
+    }
+
+    /**
+     * Gives orphan conversions the campaign and offer of their click once the click reaches the database.
+     */
+    private function linkOrphans(): void
+    {
+        $updatedAt = Carbon::now('UTC');
+
+        DB::table('conversions')
+            ->join('clicks', 'clicks.click_id', '=', 'conversions.click_id')
+            ->whereNull('conversions.campaign_id')
+            ->updateFrom([
+                'campaign_id' => DB::raw('clicks.campaign_id'),
+                'offer_id' => DB::raw('clicks.offer_id'),
+                'updated_at' => $updatedAt,
             ]);
     }
 

@@ -1,0 +1,10 @@
+<?php
+
+namespace App\Postbacks;
+
+use RuntimeException;
+
+/**
+ * The message goes to the dead stream; the exception message is its `reason`.
+ */
+final class InvalidPostbackMessage extends RuntimeException {}

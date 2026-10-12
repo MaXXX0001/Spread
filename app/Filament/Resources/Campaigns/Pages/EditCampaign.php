@@ -17,17 +17,27 @@ class EditCampaign extends EditRecord
         return [
             DeleteAction::make()
                 ->before(function (DeleteAction $action, Campaign $record): void {
-                    if (! $record->clicks()->exists()) {
+                    if ($record->clicks()->exists()) {
+                        Notification::make()
+                            ->danger()
+                            ->title('The campaign has clicks and cannot be deleted.')
+                            ->body('Deactivate it instead.')
+                            ->send();
+
+                        $action->cancel();
+
                         return;
                     }
 
-                    Notification::make()
-                        ->danger()
-                        ->title('The campaign has clicks and cannot be deleted.')
-                        ->body('Deactivate it instead.')
-                        ->send();
+                    if ($record->costs()->exists()) {
+                        Notification::make()
+                            ->danger()
+                            ->title('The campaign has costs and cannot be deleted.')
+                            ->body('Costs are needed for reports. Deactivate the campaign instead.')
+                            ->send();
 
-                    $action->cancel();
+                        $action->cancel();
+                    }
                 }),
         ];
     }

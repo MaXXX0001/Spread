@@ -55,6 +55,15 @@ class CampaignsTable
                                     return;
                                 }
 
+                                if ($record->costs()->exists()) {
+                                    $action->reportBulkProcessingFailure(
+                                        'has_costs',
+                                        'Campaigns with costs cannot be deleted: costs are needed for reports. Deactivate them instead.',
+                                    );
+
+                                    return;
+                                }
+
                                 $record->delete();
                             });
                         }),

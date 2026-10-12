@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\ConfigSnapshot\ConfigSnapshotObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'traffic_source_id', 'offer_id', 'active'])]
+#[ObservedBy(ConfigSnapshotObserver::class)]
 class Campaign extends Model
 {
     private const ALIAS_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -49,6 +53,14 @@ class Campaign extends Model
     }
 
     /**
+     * @return HasMany<Click, $this>
+     */
+    public function clicks(): HasMany
+    {
+        return $this->hasMany(Click::class);
+    }
+
+    /**
      * Macros are joined as is: URL-encoding would turn {zoneid} into %7Bzoneid%7D and the ad network would not substitute it.
      */
     public function trackingUrl(): string
@@ -68,7 +80,7 @@ class Campaign extends Model
     {
         do {
             $alias = self::generateAlias();
-            $isTaken = self::query()->where('alias', $alias)->exists();
+            $isTaken = self::query()->where('alias', '=', $alias)->exists();
         } while ($isTaken);
 
         return $alias;

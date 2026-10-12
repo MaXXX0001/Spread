@@ -2,19 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\ConfigSnapshot\ConfigSnapshotBuilder;
 use App\Filament\Resources\Campaigns\Pages\CreateCampaign;
 use App\Filament\Resources\Campaigns\Pages\EditCampaign;
 use App\Filament\Resources\Campaigns\Pages\ListCampaigns;
 use App\Models\Campaign;
+use App\Models\Click;
 use App\Models\CpaNetwork;
 use App\Models\Offer;
 use App\Models\TrafficSource;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Facades\Filament;
+use Filament\Notifications\Livewire\Notifications;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -254,6 +259,64 @@ class CampaignResourceTest extends TestCase
             ->callAction(DeleteAction::class);
 
         $this->assertModelMissing($campaign);
+    }
+
+    public function test_campaign_with_clicks_is_not_deleted_from_edit_page(): void
+    {
+        $campaign = $this->createCampaign();
+
+        $this->insertClick($campaign, '01J8Z3K4M5N6P7Q8R9S0T1V2W3');
+
+        $redis = Redis::connection('spread');
+
+        $redis->del(ConfigSnapshotBuilder::META_KEY);
+
+        Livewire::test(EditCampaign::class, ['record' => $campaign->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('The campaign has clicks and cannot be deleted.');
+
+        $this->assertModelExists($campaign);
+        $this->assertSame(0, $redis->exists(ConfigSnapshotBuilder::META_KEY));
+    }
+
+    public function test_bulk_delete_skips_campaigns_with_clicks(): void
+    {
+        $usedCampaign = $this->createCampaign();
+
+        $this->insertClick($usedCampaign, '01J8Z3K4M5N6P7Q8R9S0T1V2W3');
+
+        $unusedCampaign = $this->createCampaign([
+            'name' => 'PH / Nutra PL',
+        ]);
+
+        Livewire::test(ListCampaigns::class)
+            ->callTableBulkAction(DeleteBulkAction::class, [$usedCampaign, $unusedCampaign]);
+
+        $this->assertModelExists($usedCampaign);
+        $this->assertModelMissing($unusedCampaign);
+
+        $notifications = new Notifications;
+        $notifications->mount();
+
+        $notification = $notifications->notifications->sole();
+
+        $this->assertSame('Deleted 1 of 2', $notification->getTitle());
+        $this->assertStringContainsString('Campaigns with clicks cannot be deleted.', $notification->getBody());
+    }
+
+    private function insertClick(Campaign $campaign, string $clickId): Click
+    {
+        DB::table('clicks')->insert([
+            'click_id' => $clickId,
+            'clicked_at' => '2026-09-24 10:15:30.123',
+            'status' => 'ok',
+            'campaign_id' => $campaign->id,
+            'offer_id' => $campaign->offer_id,
+            'params' => '{}',
+            'created_at' => '2026-09-24 10:15:31',
+        ]);
+
+        return Click::query()->findOrFail($clickId);
     }
 
     /**

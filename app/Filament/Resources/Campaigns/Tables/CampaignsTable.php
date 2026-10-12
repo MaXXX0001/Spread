@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Campaigns\Tables;
 
+use App\Models\Campaign;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -9,6 +10,7 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class CampaignsTable
 {
@@ -41,7 +43,21 @@ class CampaignsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->using(function (DeleteBulkAction $action, Collection $records): void {
+                            $records->each(function (Campaign $record) use ($action): void {
+                                if ($record->clicks()->exists()) {
+                                    $action->reportBulkProcessingFailure(
+                                        'has_clicks',
+                                        'Campaigns with clicks cannot be deleted. Deactivate them instead.',
+                                    );
+
+                                    return;
+                                }
+
+                                $record->delete();
+                            });
+                        }),
                 ]),
             ]);
     }

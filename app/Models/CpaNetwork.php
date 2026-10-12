@@ -50,6 +50,14 @@ class CpaNetwork extends Model
     }
 
     /**
+     * @return HasMany<Conversion, $this>
+     */
+    public function conversions(): HasMany
+    {
+        return $this->hasMany(Conversion::class);
+    }
+
+    /**
      * Empty values are left for the admin to fill with the network's own macros.
      */
     public function postbackUrl(): string

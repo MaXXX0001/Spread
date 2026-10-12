@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Postbacks\PostbackState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -30,6 +31,7 @@ class Postback extends Model
         return [
             'received_at' => 'datetime',
             'params' => 'array',
+            'state' => PostbackState::class,
             'processed_at' => 'datetime',
         ];
     }

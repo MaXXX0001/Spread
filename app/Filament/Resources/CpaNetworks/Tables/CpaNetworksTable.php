@@ -6,6 +6,7 @@ use App\Models\CpaNetwork;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,6 +27,7 @@ class CpaNetworksTable
                 //
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
@@ -37,6 +39,15 @@ class CpaNetworksTable
                                     $action->reportBulkProcessingFailure(
                                         'has_offers',
                                         'Networks with offers cannot be deleted. Delete their offers or move them to another network first.',
+                                    );
+
+                                    return;
+                                }
+
+                                if ($record->conversions()->exists()) {
+                                    $action->reportBulkProcessingFailure(
+                                        'has_conversions',
+                                        'Networks with conversions cannot be deleted: conversions keep their network for reports.',
                                     );
 
                                     return;

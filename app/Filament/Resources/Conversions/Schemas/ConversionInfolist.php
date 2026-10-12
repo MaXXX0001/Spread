@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Conversions\Schemas;
 
 use App\Filament\Resources\Clicks\ClickResource;
+use App\Filament\Resources\Postbacks\PostbackResource;
 use App\Models\Conversion;
 use App\Models\ConversionStatusChange;
 use App\Postbacks\Payout;
@@ -62,7 +63,8 @@ class ConversionInfolist
                             ->label('Postback received (UTC)')
                             ->dateTime('Y-m-d H:i:s.v'),
                         TextEntry::make('postback_id')
-                            ->label('Postback'),
+                            ->label('Postback')
+                            ->url(fn (ConversionStatusChange $record): string => PostbackResource::getUrl('view', ['record' => $record->postback_id])),
                     ])
                     ->columns(5)
                     ->columnSpanFull(),

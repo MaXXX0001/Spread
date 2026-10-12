@@ -12,4 +12,14 @@ enum PostbackState: string
     case IGNORED = 'ignored';
     case REJECTED = 'rejected';
     case FAILED = 'failed';
+
+    /**
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $values = array_column(self::cases(), 'value');
+
+        return array_combine($values, $values);
+    }
 }

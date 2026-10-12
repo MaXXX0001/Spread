@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Postbacks\PostbackState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Throwable;
 
 /**
  * A raw postback log entry: the postback exactly as received and the result of processing it.
@@ -50,5 +52,21 @@ class Postback extends Model
     public function conversion(): BelongsTo
     {
         return $this->belongsTo(Conversion::class);
+    }
+
+    /**
+     * A query update, not save(): the model may hold changes from a processing transaction that was rolled back.
+     */
+    public function markFailed(Throwable $exception): void
+    {
+        $exceptionClass = $exception::class;
+
+        self::query()
+            ->whereKey($this->postback_id)
+            ->update([
+                'state' => PostbackState::FAILED->value,
+                'reason' => "{$exceptionClass}: {$exception->getMessage()}",
+                'processed_at' => Carbon::now('UTC'),
+            ]);
     }
 }

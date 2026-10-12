@@ -213,21 +213,8 @@ final class PostbackConsumer
             $this->processor->process($postback);
         } catch (Throwable $exception) {
             // When the database itself is down, this update throws too and the batch stays pending.
-            $this->markFailed($postbackId, $exception);
+            $postback->markFailed($exception);
         }
-    }
-
-    private function markFailed(string $postbackId, Throwable $exception): void
-    {
-        $exceptionClass = $exception::class;
-
-        Postback::query()
-            ->whereKey($postbackId)
-            ->update([
-                'state' => PostbackState::FAILED->value,
-                'reason' => "{$exceptionClass}: {$exception->getMessage()}",
-                'processed_at' => Carbon::now('UTC'),
-            ]);
     }
 
     /**

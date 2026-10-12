@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Money\Recalculator;
 use BackedEnum;
 use DateTimeZone;
 use Filament\Actions\Action;
@@ -79,16 +80,22 @@ class Settings extends Page
             ]);
     }
 
-    public function save(): void
+    public function save(Recalculator $recalculator): void
     {
         $data = $this->form->getState();
         $setting = Setting::current();
+        $previousBaseCurrency = $setting->base_currency;
         $setting->fill($data);
         $setting->save();
-
-        Notification::make()
+        $notification = Notification::make()
             ->success()
-            ->title('Settings saved.')
-            ->send();
+            ->title('Settings saved.');
+
+        if ($setting->base_currency !== $previousBaseCurrency) {
+            [$costs, $conversions] = $recalculator->all();
+            $notification->body("Recalculated {$costs} costs and {$conversions} conversions in {$setting->base_currency}.");
+        }
+
+        $notification->send();
     }
 }

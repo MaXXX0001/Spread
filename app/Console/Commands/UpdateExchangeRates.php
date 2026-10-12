@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ExchangeRate;
 use App\Money\NbuClient;
 use App\Money\NbuUnavailable;
+use App\Money\Recalculator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
 use Illuminate\Console\Attributes\Description;
@@ -24,7 +25,7 @@ class UpdateExchangeRates extends Command
     /**
      * Execute the console command.
      */
-    public function handle(NbuClient $client): int
+    public function handle(NbuClient $client, Recalculator $recalculator): int
     {
         $from = $this->dateOption('from');
         $to = $this->dateOption('to');
@@ -57,6 +58,7 @@ class UpdateExchangeRates extends Command
         }
 
         $period = CarbonPeriod::create($from, $to);
+        $hasSavedRates = false;
 
         foreach ($period as $day) {
             $date = CarbonImmutable::instance($day);
@@ -66,6 +68,11 @@ class UpdateExchangeRates extends Command
                 $rates = $client->fetch($date);
             } catch (NbuUnavailable $exception) {
                 $this->error("Rates for {$formattedDate} not updated: {$exception->getMessage()}");
+
+                // Dates saved before the failure still fill the amounts that waited for them.
+                if ($hasSavedRates) {
+                    $this->recalculateMissing($recalculator);
+                }
 
                 return self::FAILURE;
             }
@@ -77,10 +84,22 @@ class UpdateExchangeRates extends Command
             }
 
             [$saved, $kept] = $this->store($date, $rates);
+            $hasSavedRates = $hasSavedRates || $saved > 0;
             $this->info("{$formattedDate}: {$saved} rates saved, {$kept} manual kept.");
         }
 
+        if ($hasSavedRates) {
+            $this->recalculateMissing($recalculator);
+        }
+
         return self::SUCCESS;
+    }
+
+    private function recalculateMissing(Recalculator $recalculator): void
+    {
+        [$costs, $conversions] = $recalculator->missing();
+
+        $this->info("Recalculated {$costs} costs and {$conversions} conversions without a base amount.");
     }
 
     /**

@@ -5,7 +5,9 @@ namespace App\Filament\Resources\CpaNetworks;
 use App\Filament\Resources\CpaNetworks\Pages\CreateCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Pages\EditCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Pages\ListCpaNetworks;
+use App\Filament\Resources\CpaNetworks\Pages\ViewCpaNetwork;
 use App\Filament\Resources\CpaNetworks\Schemas\CpaNetworkForm;
+use App\Filament\Resources\CpaNetworks\Schemas\CpaNetworkInfolist;
 use App\Filament\Resources\CpaNetworks\Tables\CpaNetworksTable;
 use App\Models\CpaNetwork;
 use BackedEnum;
@@ -27,6 +29,11 @@ class CpaNetworkResource extends Resource
         return CpaNetworkForm::configure($schema);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return CpaNetworkInfolist::configure($schema);
+    }
+
     public static function table(Table $table): Table
     {
         return CpaNetworksTable::configure($table);
@@ -44,6 +51,7 @@ class CpaNetworkResource extends Resource
         return [
             'index' => ListCpaNetworks::route('/'),
             'create' => CreateCpaNetwork::route('/create'),
+            'view' => ViewCpaNetwork::route('/{record}'),
             'edit' => EditCpaNetwork::route('/{record}/edit'),
         ];
     }

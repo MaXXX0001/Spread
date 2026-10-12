@@ -16,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // The redirect keeps serving clicks while the admin is down for maintenance.
-        $middleware->preventRequestsDuringMaintenance(except: ['c/*']);
+        // The redirect and postback intake keep working while the admin is down for maintenance.
+        $middleware->preventRequestsDuringMaintenance(except: ['c/*', 'p/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

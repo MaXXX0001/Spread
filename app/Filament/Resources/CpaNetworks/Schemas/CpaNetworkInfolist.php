@@ -19,6 +19,8 @@ class CpaNetworkInfolist
                     ->helperText("Paste it into the network's postback settings and put the network's macro after each \"=\".")
                     ->copyable()
                     ->columnSpanFull(),
+                TextEntry::make('default_currency')
+                    ->label('Default currency'),
                 KeyValueEntry::make('status_map')
                     ->label('Status mapping')
                     ->keyLabel('Network status')

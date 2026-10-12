@@ -22,6 +22,13 @@ class CpaNetworkForm
                     ->required()
                     ->maxLength(255)
                     ->unique(),
+                TextInput::make('default_currency')
+                    ->label('Default currency')
+                    ->helperText('Used for payouts of postbacks that come without a currency.')
+                    ->required()
+                    ->regex('/^[A-Za-z]{3}$/')
+                    ->default('USD')
+                    ->dehydrateStateUsing(fn (string $state): string => strtoupper($state)),
                 Textarea::make('notes')
                     ->columnSpanFull(),
                 Repeater::make('status_map')

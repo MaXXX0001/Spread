@@ -8,6 +8,7 @@ use App\Filament\Resources\Campaigns\Pages\EditCampaign;
 use App\Filament\Resources\Campaigns\Pages\ListCampaigns;
 use App\Models\Campaign;
 use App\Models\Click;
+use App\Models\Cost;
 use App\Models\CpaNetwork;
 use App\Models\Offer;
 use App\Models\TrafficSource;
@@ -302,6 +303,55 @@ class CampaignResourceTest extends TestCase
 
         $this->assertSame('Deleted 1 of 2', $notification->getTitle());
         $this->assertStringContainsString('Campaigns with clicks cannot be deleted.', $notification->getBody());
+    }
+
+    public function test_campaign_with_costs_is_not_deleted_from_edit_page(): void
+    {
+        $campaign = $this->createCampaign();
+
+        $this->createCost($campaign);
+
+        Livewire::test(EditCampaign::class, ['record' => $campaign->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('The campaign has costs and cannot be deleted.');
+
+        $this->assertModelExists($campaign);
+    }
+
+    public function test_bulk_delete_skips_campaigns_with_costs(): void
+    {
+        $usedCampaign = $this->createCampaign();
+
+        $this->createCost($usedCampaign);
+
+        $unusedCampaign = $this->createCampaign([
+            'name' => 'PH / Nutra PL',
+        ]);
+
+        Livewire::test(ListCampaigns::class)
+            ->callTableBulkAction(DeleteBulkAction::class, [$usedCampaign, $unusedCampaign]);
+
+        $this->assertModelExists($usedCampaign);
+        $this->assertModelMissing($unusedCampaign);
+
+        $notifications = new Notifications;
+        $notifications->mount();
+
+        $notification = $notifications->notifications->sole();
+
+        $this->assertSame('Deleted 1 of 2', $notification->getTitle());
+        $this->assertStringContainsString('Campaigns with costs cannot be deleted', $notification->getBody());
+    }
+
+    private function createCost(Campaign $campaign): Cost
+    {
+        return Cost::create([
+            'campaign_id' => $campaign->id,
+            'date' => '2026-10-10',
+            'zone' => null,
+            'amount' => '10',
+            'currency' => 'USD',
+        ]);
     }
 
     private function insertClick(Campaign $campaign, string $clickId): Click

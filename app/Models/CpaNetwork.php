@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'notes'])]
+#[Fillable(['name', 'notes', 'status_map', 'allowed_ips'])]
 class CpaNetwork extends Model
 {
     private const string POSTBACK_KEY_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';

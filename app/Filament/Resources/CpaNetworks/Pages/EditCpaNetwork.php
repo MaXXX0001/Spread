@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CpaNetworks\Pages;
 
 use App\Filament\Resources\CpaNetworks\CpaNetworkResource;
+use App\Filament\Resources\CpaNetworks\Schemas\CpaNetworkForm;
 use App\Models\CpaNetwork;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
@@ -30,5 +31,15 @@ class EditCpaNetwork extends EditRecord
                     $action->cancel();
                 }),
         ];
+    }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return CpaNetworkForm::toFormData($data);
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return CpaNetworkForm::toRecordData($data);
     }
 }

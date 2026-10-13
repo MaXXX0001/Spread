@@ -36,3 +36,11 @@ Schedule::command('spread:alerts:check')
 Schedule::command('spread:alerts:daily')
     ->everyMinute()
     ->withoutOverlapping();
+
+$backupPingUrl = config('services.healthchecks.backup_url');
+
+Schedule::command('spread:backup')
+    ->dailyAt('03:00')
+    ->timezone('Europe/Kyiv')
+    ->withoutOverlapping()
+    ->pingOnSuccessIf(filled($backupPingUrl), (string) $backupPingUrl);

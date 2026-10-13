@@ -2,6 +2,7 @@
 
 namespace App\Money;
 
+use App\Jobs\RebuildReportStats;
 use App\Models\Conversion;
 use App\Models\Cost;
 use App\Models\Setting;
@@ -117,6 +118,11 @@ final class Recalculator
                 $conversionCount++;
             }
         });
+
+        // Report stats hold payout sums in the base currency; costs are read by reports directly.
+        if ($conversionCount > 0) {
+            RebuildReportStats::dispatch();
+        }
 
         return [$costCount, $conversionCount];
     }

@@ -1,0 +1,18 @@
+[Unit]
+Description=Spread postbacks worker (Redis stream to PostgreSQL)
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/spread
+ExecStart=/usr/bin/php artisan spread:postbacks:consume
+# The worker finishes its current batch on SIGTERM and exits with 0.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

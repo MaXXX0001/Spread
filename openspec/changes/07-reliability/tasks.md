@@ -84,7 +84,8 @@
   - URL порожній → пінгу немає.
   
   Перевірка: `W php artisan test --filter=Heartbeat` зелений.
-- [ ] 2.8 (`task/07-reliability/deploy-files`) `deploy/cron/spread`, `deploy/systemd/*.service`, `deploy/nginx/spread.conf`, `docs/deploy.md` (D8). Перевірка: `docker exec laradock_all-nginx-1 nginx -t -c` на тимчасовому `nginx.conf`, що підключає `deploy/nginx/spread.conf`, → `syntax is ok`; у `docs/deploy.md` є кроки для `.env`, `CREATEDB`, UptimeRobot, Healthchecks, S3, 2FA-відновлення.
+- [x] 2.8 (`task/07-reliability/deploy-files`) `deploy/cron/spread`, `deploy/systemd/*.service`, `deploy/nginx/spread.conf`, `docs/deploy.md` (D8). Перевірка: `docker exec laradock_all-nginx-1 nginx -t -c` на тимчасовому `nginx.conf`, що підключає `deploy/nginx/spread.conf`, → `syntax is ok`; у `docs/deploy.md` є кроки для `.env`, `CREATEDB`, UptimeRobot, Healthchecks, S3, 2FA-відновлення.
+  - Синтаксис `deploy/nginx/spread.conf` перевірено `nginx -t` у контейнері Laradock на копії, де HTTPS-блок слухає 8443 без сертифікатів, а `include fastcgi_params` абсолютний (варіант із самопідписаним сертифікатом через `sh -c` зупинила вбудована перевірка безпеки); перевірочні файли лишились у `/tmp` контейнера nginx. Перший користувач адмінки — `make:filament-user` (окремої `spread:`-команди немає). systemd-юніти: `KillSignal=SIGTERM`, `Restart=always`.
 
 ## 3. Ручна перевірка «Готово, коли» (агент з дозволу користувача)
 

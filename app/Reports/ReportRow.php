@@ -69,6 +69,43 @@ final class ReportRow
     }
 
     /**
+     * Dimension values and metrics as shown and exported: money, CR, ROI and EPC with 2 decimals, null when undefined.
+     *
+     * @return array<string, string|int|null>
+     */
+    public function toArray(): array
+    {
+        return array_merge($this->dimensions, [
+            'clicks' => $this->clicks,
+            'unique_clicks' => $this->uniqueClicks,
+            'bot_clicks' => $this->botClicks,
+            'conversions' => $this->conversions,
+            'approved' => $this->approved,
+            'hold' => $this->hold,
+            'rejected' => $this->rejected,
+            'cr' => self::format($this->cr()),
+            'revenue' => self::format($this->revenue),
+            'expected_revenue' => self::format($this->expectedRevenue),
+            'cost' => self::format($this->cost),
+            'profit' => self::format($this->profit()),
+            'roi' => self::format($this->roi()),
+            'epc' => self::format($this->epc()),
+        ]);
+    }
+
+    /**
+     * Rounds half away from zero to 2 decimals, without thousands separators.
+     */
+    public static function format(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return bcround($value, 2);
+    }
+
+    /**
      * Revenue per click; null without clicks.
      */
     public function epc(): ?string

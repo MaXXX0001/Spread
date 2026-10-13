@@ -23,7 +23,8 @@
 
 ## 2. Інфраструктура й дані (агент з дозволу користувача)
 
-- [ ] 2.1 Нових пакетів і змін у Laradock чи nginx немає. Після злиття 1.2 виконати `W php artisan migrate` на БД `spread` і `W php artisan spread:reports:aggregate --all`. Запуск планувальника (cron) — Етап 7: локально команду агрегації запускають вручну, а для фонової перебудови запускають `W php artisan queue:work --once` або Horizon.
+- [x] 2.1 Нових пакетів і змін у Laradock чи nginx немає. Після злиття 1.2 виконати `W php artisan migrate` на БД `spread` і `W php artisan spread:reports:aggregate --all`. Запуск планувальника (cron) — Етап 7: локально команду агрегації запускають вручну, а для фонової перебудови запускають `W php artisan queue:work --once` або Horizon.
+  - 2026-10-13, агент: обидві міграції застосовано на `spread` (batch 13, 14); `spread:reports:aggregate --all` → 5 рядків, `sum(clicks)` 6006 = кліків у `clicks`.
 
 ## 3. Ручна перевірка «Готово, коли» (користувач або агент з дозволу користувача)
 

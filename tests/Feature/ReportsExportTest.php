@@ -65,7 +65,7 @@ class ReportsExportTest extends TestCase
 
         $lines = $this->csvLines($component);
 
-        $this->assertSame(['zone', 'clicks', 'unique_clicks', 'bot_clicks', 'conversions', 'approved', 'hold', 'rejected', 'cr', 'revenue', 'expected_revenue', 'cost', 'profit', 'roi', 'epc'], $lines[0]);
+        $this->assertSame(['zone', 'clicks', 'cost', 'revenue', 'profit', 'roi', 'cr', 'epc', 'conversions', 'approved', 'hold', 'rejected', 'expected_revenue', 'unique_clicks', 'bot_clicks'], $lines[0]);
         $this->assertCount(121, $lines);
         // Sorted as the table: most clicks first.
         $this->assertSame('z120', $lines[1][0]);

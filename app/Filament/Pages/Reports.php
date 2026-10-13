@@ -45,23 +45,23 @@ class Reports extends Page implements HasTable
     private const string DATE_FORMAT = 'Y-m-d';
 
     /**
-     * Metric columns: key in ReportRow::toArray() => label.
+     * Metric columns: key in ReportRow::toArray() => label. Money comes first so profit and ROI fit on screen.
      */
     private const array METRICS = [
         'clicks' => 'Clicks',
-        'unique_clicks' => 'Unique',
-        'bot_clicks' => 'Bots',
+        'cost' => 'Cost',
+        'revenue' => 'Revenue',
+        'profit' => 'Profit',
+        'roi' => 'ROI, %',
+        'cr' => 'CR, %',
+        'epc' => 'EPC',
         'conversions' => 'Conv.',
         'approved' => 'Approved',
         'hold' => 'Hold',
         'rejected' => 'Rejected',
-        'cr' => 'CR, %',
-        'revenue' => 'Revenue',
         'expected_revenue' => 'Expected',
-        'cost' => 'Cost',
-        'profit' => 'Profit',
-        'roi' => 'ROI, %',
-        'epc' => 'EPC',
+        'unique_clicks' => 'Unique',
+        'bot_clicks' => 'Bots',
     ];
 
     /**

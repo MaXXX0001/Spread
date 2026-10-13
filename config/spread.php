@@ -56,4 +56,19 @@ return [
         'pg_restore' => env('SPREAD_PG_RESTORE', 'pg_restore'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Click archive
+    |--------------------------------------------------------------------------
+    |
+    | "spread:clicks:archive" writes old clicks without conversions here as
+    | gzipped CSV per month before deleting them, and copies the files to
+    | the "backups" disk when it has a bucket.
+    |
+    */
+
+    'archive' => [
+        'path' => env('SPREAD_ARCHIVE_PATH', storage_path('app/archive')),
+    ],
+
 ];

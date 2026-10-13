@@ -45,7 +45,8 @@
   - робоча база не змінилась.
   
   Перевірка: `W php artisan test --filter=BackupVerif` зелений.
-- [ ] 2.4 (`task/07-reliability/clicks-archive`) Міграція `click_archives`, `App\Clicks\ClickArchiver`, команда `spread:clicks:archive {--months=6}`, розклад щомісяця, пропуск архівованих місяців у `StatsAggregator` (D4). Тести за spec clicks-archive:
+- [x] 2.4 (`task/07-reliability/clicks-archive`) Міграція `click_archives`, `App\Clicks\ClickArchiver`, команда `spread:clicks:archive {--months=6}`, розклад щомісяця, пропуск архівованих місяців у `StatsAggregator` (D4). Тести за spec clicks-archive:
+  - Шматки перерахунку в `StatsAggregator` тепер ріжуться ще й по межах місяців, і шматок заархівованого місяця (з `click_archives`) пропускається; `rebuildAll()` видаляє рядки поза діапазоном кліків лише для незаархівованих місяців. Каталог архіву — `spread.archive.path`; копія на диску `backups` у `archive/`. Видалення — пачками по 5000 з тією самою умовою «без конверсії». Під час задачі завис тестовий запуск: процеси `php` пережили перезапуск контейнера й тримали «idle in transaction» у `spread_testing`; після `pkill` і `pg_terminate_backend` усе стабільно.
   - 1000 кліків за 2026-03, 10 з конверсіями, зараз 2026-10 → у `.csv.gz` 990 рядків + заголовок, у базі 10, запис у `click_archives`;
   - 2026-04 не зачеплено;
   - статистика й звіт за 2026-03 до і після однакові;

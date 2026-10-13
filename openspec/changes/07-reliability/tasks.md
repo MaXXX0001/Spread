@@ -10,7 +10,8 @@
 
 - [ ] 1.1 Агент: бекап `laradock/workspace/Dockerfile` → `Dockerfile.bak-2026-10-14`, блок встановлення `postgresql-client-18` з `apt.postgresql.org` (D9). **Користувач:** перебудувати й перезапустити workspace-85. Перевірка: `W pg_dump --version` → 18.x; `W sh -c 'PGPASSWORD=secret pg_dump -h postgres -U default -d spread_testing --schema-only' | head -3` без «version mismatch».
 - [ ] 1.2 Агент: запустити MinIO з Laradock, створити бакет `spread-backups` і додати `BACKUP_S3_*` у `.env` проєкту (D9). Перевірка: `W php artisan tinker --execute "Storage::disk('backups')->put('probe.txt', 'ok'); echo Storage::disk('backups')->get('probe.txt');"` → `ok` (після задачі 2.2, де з'являється диск).
-- [ ] 1.3 Агент: `limit_req_zone` і `location ^~ /p/` у `laradock/nginx/sites/85_spread.conf` (бекап `.bak-2026-10-14`), `nginx -t` і `nginx -s reload` (D8, D9). Перевірка: `docker exec laradock_all-nginx-1 nginx -t` — `syntax is ok`.
+- [x] 1.3 Агент: `limit_req_zone` і `location ^~ /p/` у `laradock/nginx/sites/85_spread.conf` (бекап `.bak-2026-10-14`), `nginx -t` і `nginx -s reload` (D8, D9). Перевірка: `docker exec laradock_all-nginx-1 nginx -t` — `syntax is ok`.
+  - 2026-10-14, агент: `85_spread.conf` (бекап `.bak-2026-10-14`) — `limit_req_zone … rate=20r/s` на рівні http і `location ^~ /p/` з `burst=100 nodelay`, `limit_req_status 429`; `nginx -t` ok, `nginx -s reload`; `/p/` → 200, `/c/` → 302. Навантажувальна перевірка — 3.6.
 
 ## 2. Код
 

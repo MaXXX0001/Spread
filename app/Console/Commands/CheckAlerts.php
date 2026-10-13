@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Alerts\AlertEngine;
+use App\Alerts\Check;
+use App\Models\AlertSetting;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
+use Illuminate\Console\Command;
+
+#[Signature('spread:alerts:check')]
+#[Description('Check alert conditions and send Telegram messages about new, lasting and resolved problems')]
+class CheckAlerts extends Command
+{
+    /**
+     * @var list<class-string<Check>>
+     */
+    public const array CHECKS = [];
+
+    /**
+     * Execute the console command.
+     */
+    public function handle(AlertEngine $engine): int
+    {
+        $checks = array_map(fn (string $class): Check => app($class), self::CHECKS);
+        $settings = AlertSetting::current();
+
+        $engine->run($settings, $checks);
+
+        return self::SUCCESS;
+    }
+}

@@ -27,3 +27,8 @@ Schedule::command('spread:reports:aggregate --days=30')
 Schedule::command('spread:alerts:check')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Runs every minute and sends once a day: the time is an admin setting read at run time.
+Schedule::command('spread:alerts:daily')
+    ->everyMinute()
+    ->withoutOverlapping();

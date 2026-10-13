@@ -36,7 +36,8 @@ class AdminAccessTest extends TestCase
 
     public function test_user_logs_in_with_correct_password(): void
     {
-        $user = User::factory()->create(['password' => 'correct-password']);
+        // A user with two-factor authentication also needs a code: see TwoFactorTest.
+        $user = User::factory()->withoutTwoFactor()->create(['password' => 'correct-password']);
 
         Livewire::test(Login::class)
             ->fillForm([

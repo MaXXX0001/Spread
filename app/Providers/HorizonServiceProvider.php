@@ -20,10 +20,11 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     }
 
     /**
-     * Allow only the authenticated admin, in every environment including local.
+     * Allow only the authenticated admin with two-factor authentication set up, in every environment including local.
+     * Filament completes a login only after the code, so a signed-in user with a secret has passed it.
      */
     protected function authorization(): void
     {
-        Horizon::auth(fn ($request) => $request->user() !== null);
+        Horizon::auth(fn ($request) => $request->user()?->getAppAuthenticationSecret() !== null);
     }
 }

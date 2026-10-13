@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Alerts\AlertEngine;
 use App\Alerts\Check;
+use App\Alerts\Checks\BufferCheck;
+use App\Alerts\Checks\ErrorsCheck;
 use App\Alerts\Checks\HighCrCheck;
 use App\Alerts\Checks\RoiCheck;
 use App\Alerts\Checks\SilenceCheck;
@@ -23,6 +25,8 @@ class CheckAlerts extends Command
         RoiCheck::class,
         SilenceCheck::class,
         HighCrCheck::class,
+        BufferCheck::class,
+        ErrorsCheck::class,
     ];
 
     /**

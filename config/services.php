@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Dead man's switches: Healthchecks.io notifies when these pings stop coming.
+    'healthchecks' => [
+        'scheduler_url' => env('HEALTHCHECKS_SCHEDULER_URL'),
+        'backup_url' => env('HEALTHCHECKS_BACKUP_URL'),
+    ],
+
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
     ],

@@ -49,3 +49,8 @@ Schedule::command('spread:backup:verify')
     ->weeklyOn(0, '04:00')
     ->timezone('Europe/Kyiv')
     ->withoutOverlapping();
+
+Schedule::command('spread:clicks:archive')
+    ->monthlyOn(1, '04:30')
+    ->timezone('Europe/Kyiv')
+    ->withoutOverlapping();

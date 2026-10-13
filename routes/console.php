@@ -12,3 +12,13 @@ Artisan::command('inspire', function () {
 Schedule::command('spread:rates:update')
     ->dailyAt('09:00')
     ->timezone('Europe/Kyiv');
+
+// Conversion statuses change after the click, so recent days are recalculated often and a month nightly.
+Schedule::command('spread:reports:aggregate')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+Schedule::command('spread:reports:aggregate --days=30')
+    ->dailyAt('03:30')
+    ->timezone('Europe/Kyiv')
+    ->withoutOverlapping();

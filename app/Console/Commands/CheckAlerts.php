@@ -4,6 +4,9 @@ namespace App\Console\Commands;
 
 use App\Alerts\AlertEngine;
 use App\Alerts\Check;
+use App\Alerts\Checks\HighCrCheck;
+use App\Alerts\Checks\RoiCheck;
+use App\Alerts\Checks\SilenceCheck;
 use App\Models\AlertSetting;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -16,7 +19,11 @@ class CheckAlerts extends Command
     /**
      * @var list<class-string<Check>>
      */
-    public const array CHECKS = [];
+    public const array CHECKS = [
+        RoiCheck::class,
+        SilenceCheck::class,
+        HighCrCheck::class,
+    ];
 
     /**
      * Execute the console command.

@@ -31,7 +31,8 @@
   - `schedule:list` містить команду щохвилини.
   
   Перевірка: `W php artisan test --filter='AlertEngine|AlertsCheck'` зелений.
-- [ ] 1.3 (`task/06-alerts/campaign-checks`) `RoiCheck`, `SilenceCheck`, `HighCrCheck` і їх підключення до команди (D3, D6). Тести за spec alerts «Алерт ROI», «Алерт без конверсій», «Алерт високого CR»:
+- [x] 1.3 (`task/06-alerts/campaign-checks`) `RoiCheck`, `SilenceCheck`, `HighCrCheck` і їх підключення до команди (D3, D6). Тести за spec alerts «Алерт ROI», «Алерт без конверсій», «Алерт високого CR»:
+  - Тести — один `CampaignAlertChecksTest` (перевірка: `--filter=CampaignAlertChecks`). Спільне форматування — `App\Alerts\AlertText` (гроші з базовою валютою, назва кампанії з `e()`, посилання на Reports з `APP_URL`). Додатково перевірено: клік до початку вікна не рахується; конверсія, створена до вікна, тишу не знімає; ROI за вчора не дає алерту сьогодні.
   - витрати 25 / дохід 10 → алерт із назвою кампанії й цифрами;
   - витрати 15 → нема;
   - 300 кліків / 0 нових конверсій за 6 год → алерт;

@@ -73,7 +73,8 @@
   - HTML у тексті екрановано.
   
   Перевірка: `W php artisan test --filter=TelegramLog` зелений.
-- [ ] 2.7 (`task/07-reliability/heartbeat`) `services.healthchecks.scheduler_url`/`backup_url`, `.env.example`, `pingOnSuccessIf` для `spread:alerts:check` (D7). Тести:
+- [x] 2.7 (`task/07-reliability/heartbeat`) `services.healthchecks.scheduler_url`/`backup_url`, `.env.example`, `pingOnSuccessIf` для `spread:alerts:check` (D7). Тести:
+  - Пінг — `->pingOnSuccessIf()` на `spread:alerts:check`; Laravel шле його Guzzle-клієнтом з контейнера, тож тест підставляє `GuzzleHttp\Client` з `MockHandler` і перебудовує розклад з `routes/console.php` (`Schedule` фасад через `swap`). Невдалий запуск не пінгує. Помилку самого пінгу Laravel передає в `report()`, тобто вона дійде в Telegram через канал логів (з тротлінгом).
   - URL задано → подія розкладу має пінг (через `Schedule` подію та `Http::fake()` при виконанні callback);
   - URL порожній → пінгу немає.
   

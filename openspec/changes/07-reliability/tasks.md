@@ -62,7 +62,8 @@
   - наявні тести адмінки зелені (у фабриці чи хелпері тестів користувач має 2FA).
   
   Перевірка: `W php artisan test --filter='TwoFactor|AdminAccess|HorizonAccess'` і `W php artisan test` зелені.
-- [ ] 2.6 (`task/07-reliability/log-telegram`) `App\Logging\TelegramLogHandler`, канал `telegram`, `LOG_STACK`/`LOG_DAILY_DAYS` у `.env.example` (D6). Тести з `Http::fake()`:
+- [x] 2.6 (`task/07-reliability/log-telegram`) `App\Logging\TelegramLogHandler`, канал `telegram`, `LOG_STACK`/`LOG_DAILY_DAYS` у `.env.example` (D6). Тести з `Http::fake()`:
+  - Додатково: `phpunit.xml` задає `TELEGRAM_BOT_TOKEN=""` і `LOG_STACK=single` — без цього тести брали справжній токен з `.env` і з новим каналом могли б слати реальні повідомлення. Текст — `🚨 <b>ERROR</b>` + `<pre>` з класом, повідомленням і місцем, обрізаний до 3500 символів. `.env` локально теж переведено на `LOG_STACK=daily,telegram`, `LOG_DAILY_DAYS=14`.
   - `Log::error` з винятком → одне повідомлення з класом, текстом, файлом і рядком;
   - 50 однакових за 5 хв → одне, через 11 хв → друге;
   - `warning` → нічого;

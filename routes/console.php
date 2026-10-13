@@ -22,3 +22,13 @@ Schedule::command('spread:reports:aggregate --days=30')
     ->dailyAt('03:30')
     ->timezone('Europe/Kyiv')
     ->withoutOverlapping();
+
+// Sent from the command, not a queued job: an alert about stopped workers must not depend on the queue worker.
+Schedule::command('spread:alerts:check')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+// Runs every minute and sends once a day: the time is an admin setting read at run time.
+Schedule::command('spread:alerts:daily')
+    ->everyMinute()
+    ->withoutOverlapping();

@@ -5,13 +5,17 @@ namespace App\Filament\Pages;
 use App\Models\Campaign;
 use App\Models\Setting;
 use App\Reports\Dimension;
+use App\Reports\ReportCsv;
 use App\Reports\ReportFilter;
 use App\Reports\ReportQuery;
 use App\Reports\ReportRow;
 use BackedEnum;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\EmbeddedTable;
@@ -28,6 +32,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Reports extends Page implements HasTable
 {
@@ -58,6 +63,42 @@ class Reports extends Page implements HasTable
         'roi' => 'ROI, %',
         'epc' => 'EPC',
     ];
+
+    /**
+     * Columns of the loss-making zones file, in order.
+     */
+    private const array LOSS_ZONE_COLUMNS = ['zone', 'clicks', 'conversions', 'cost', 'revenue', 'profit', 'roi'];
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon(Heroicon::OutlinedArrowDownTray)
+                ->action(fn (): StreamedResponse => $this->exportCsv()),
+            Action::make('lossZones')
+                ->label('Loss-making zones')
+                ->icon(Heroicon::OutlinedNoSymbol)
+                ->modalDescription('Zones of one campaign with a negative profit in the report period, worst first.')
+                ->schema([
+                    Select::make('campaign_id')
+                        ->label('Campaign')
+                        ->options(fn (): array => Campaign::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->default(fn (): ?int => $this->singleFilteredCampaignId())
+                        ->searchable()
+                        ->required(),
+                    TextInput::make('min_cost')
+                        ->label('Minimum cost')
+                        ->helperText('Only zones that cost at least this much.')
+                        // A plain decimal: the value goes to bccomp(), which rejects forms like 1e3.
+                        ->regex('/^\d{1,10}(\.\d{1,4})?$/')
+                        ->default('0')
+                        ->required(),
+                ])
+                ->modalSubmitActionLabel('Download')
+                ->action(fn (array $data): ?StreamedResponse => $this->exportLossZones((int) $data['campaign_id'], (string) $data['min_cost'])),
+        ];
+    }
 
     public function content(Schema $schema): Schema
     {
@@ -187,6 +228,75 @@ class Reports extends Page implements HasTable
             : fn (array $row): string => (string) ($row[$sortColumn] ?? '');
 
         return $rows->sortBy($sortValue, SORT_NATURAL, $isDescending);
+    }
+
+    private function exportCsv(): StreamedResponse
+    {
+        $filter = $this->currentReportFilter();
+        $sortColumn = $this->getTableSortColumn();
+        $sortDirection = $this->getTableSortDirection();
+        $rows = $this->sortedRows($filter, $sortColumn, $sortDirection);
+        $dimensionKeys = array_map(fn (Dimension $dimension): string => $dimension->value, $filter->groupBy);
+        $metricKeys = array_keys(self::METRICS);
+        $header = [...$dimensionKeys, ...$metricKeys];
+        $lines = $rows->map(fn (array $row): array => array_map(fn (string $key): string|int|null => $row[$key] ?? null, $header));
+        $from = $filter->from->format(self::DATE_FORMAT);
+        $to = $filter->to->format(self::DATE_FORMAT);
+
+        return ReportCsv::download("report-{$from}-{$to}.csv", $header, $lines);
+    }
+
+    private function exportLossZones(int $campaignId, string $minCost): ?StreamedResponse
+    {
+        $campaign = Campaign::query()->findOrFail($campaignId);
+        $reportFilter = $this->currentReportFilter();
+        $filter = new ReportFilter($reportFilter->from, $reportFilter->to, [$campaignId], [Dimension::ZONE]);
+        $zones = app(ReportQuery::class)
+            ->rows($filter)
+            ->filter(fn (ReportRow $row): bool => self::isLossMaking($row, $minCost))
+            ->sort(fn (ReportRow $a, ReportRow $b): int => bccomp($a->profit(), $b->profit(), 8))
+            ->map(function (ReportRow $row): array {
+                $values = $row->toArray();
+
+                return array_map(fn (string $key): string|int|null => $values[$key], self::LOSS_ZONE_COLUMNS);
+            });
+
+        if ($zones->isEmpty()) {
+            Notification::make()
+                ->info()
+                ->title('No loss-making zones')
+                ->body("Every zone of {$campaign->name} with cost of at least {$minCost} is profitable in this period.")
+                ->send();
+
+            return null;
+        }
+
+        $from = $filter->from->format(self::DATE_FORMAT);
+        $to = $filter->to->format(self::DATE_FORMAT);
+
+        return ReportCsv::download("loss-zones-{$campaign->alias}-{$from}-{$to}.csv", self::LOSS_ZONE_COLUMNS, $zones);
+    }
+
+    /**
+     * An empty zone cannot be blacklisted, so it never counts.
+     */
+    private static function isLossMaking(ReportRow $row, string $minCost): bool
+    {
+        $zone = $row->dimension(Dimension::ZONE);
+        $profit = $row->profit();
+        $hasLoss = bccomp($profit, '0', 8) < 0;
+        $hasEnoughCost = bccomp($row->cost, $minCost, 8) >= 0;
+
+        return $zone !== ''
+            && $hasLoss
+            && $hasEnoughCost;
+    }
+
+    private function singleFilteredCampaignId(): ?int
+    {
+        $campaignIds = $this->currentReportFilter()->campaignIds;
+
+        return count($campaignIds) === 1 ? $campaignIds[0] : null;
     }
 
     /**

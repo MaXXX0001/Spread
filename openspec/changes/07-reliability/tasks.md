@@ -15,7 +15,8 @@
 
 ## 2. Код
 
-- [ ] 2.1 (`task/07-reliability/health`) `App\HotPath\HealthController`, маршрут `/health`, розділ у docs/contract.md у тому ж коміті (D1). Тести за spec monitoring «Health-ендпоінт»:
+- [x] 2.1 (`task/07-reliability/health`) `App\HotPath\HealthController`, маршрут `/health`, розділ у docs/contract.md у тому ж коміті (D1). Тести за spec monitoring «Health-ендпоінт»:
+  - Тексти 503 — `no config snapshot` і `redis unavailable`; розділ «Health» у docs/contract.md у тому ж коміті. Тест «Redis недоступний» підміняє `RedisManager` (як у 06-alerts), «БД недоступна» — `pgsql.host` на неіснуючий хост. Живий `curl` → `200 OK`, `Cache-Control: no-store, private`, без `Set-Cookie`.
   - знімок є → `200 OK`, `Cache-Control: no-store`, без `Set-Cookie`;
   - немає `meta` → `503`;
   - Redis недоступний (підмінений `RedisManager`) → `503`;

@@ -68,6 +68,97 @@ class TrafficSourceResourceTest extends TestCase
             ]);
     }
 
+    public function test_zone_and_creative_params_are_saved(): void
+    {
+        Livewire::test(CreateTrafficSource::class)
+            ->fillForm([
+                'name' => 'PushHouse',
+                'macros' => self::MACROS,
+                'zone_param' => 'zone',
+                'creative_param' => 'creative',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $source = TrafficSource::query()->sole();
+
+        $this->assertSame('zone', $source->zone_param);
+        $this->assertSame('creative', $source->creative_param);
+
+        Livewire::test(EditTrafficSource::class, ['record' => $source->getRouteKey()])
+            ->assertSchemaStateSet([
+                'zone_param' => 'zone',
+                'creative_param' => 'creative',
+            ]);
+    }
+
+    public function test_source_is_saved_without_zone_and_creative_params(): void
+    {
+        Livewire::test(CreateTrafficSource::class)
+            ->fillForm([
+                'name' => 'PushHouse',
+                'macros' => self::MACROS,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $source = TrafficSource::query()->sole();
+
+        $this->assertNull($source->zone_param);
+        $this->assertNull($source->creative_param);
+    }
+
+    public function test_param_not_in_pairs_is_rejected(): void
+    {
+        Livewire::test(CreateTrafficSource::class)
+            ->fillForm([
+                'name' => 'PushHouse',
+                'macros' => self::MACROS,
+                'zone_param' => 'zid',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['zone_param']);
+
+        $this->assertDatabaseCount('traffic_sources', 0);
+    }
+
+    public function test_removing_the_zone_pair_is_rejected(): void
+    {
+        $source = TrafficSource::create([
+            'name' => 'PushHouse',
+            'macros' => self::MACROS,
+            'zone_param' => 'zone',
+        ]);
+
+        Livewire::test(EditTrafficSource::class, ['record' => $source->getRouteKey()])
+            ->fillForm([
+                'macros' => [
+                    ['param' => 'creative', 'macro' => '{bannerid}'],
+                ],
+            ])
+            ->call('save')
+            ->assertHasFormErrors(['zone_param']);
+
+        $source->refresh();
+
+        $this->assertEquals(self::MACROS, $source->macros);
+    }
+
+    public function test_same_param_for_zone_and_creative_is_rejected(): void
+    {
+        Livewire::test(CreateTrafficSource::class)
+            ->fillForm([
+                'name' => 'PushHouse',
+                'macros' => self::MACROS,
+                'zone_param' => 'zone',
+                'creative_param' => 'zone',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['creative_param']);
+
+        $this->assertDatabaseCount('traffic_sources', 0);
+    }
+
     public function test_param_names_differing_only_in_case_are_allowed(): void
     {
         Livewire::test(CreateTrafficSource::class)

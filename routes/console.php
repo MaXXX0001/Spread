@@ -44,3 +44,8 @@ Schedule::command('spread:backup')
     ->timezone('Europe/Kyiv')
     ->withoutOverlapping()
     ->pingOnSuccessIf(filled($backupPingUrl), (string) $backupPingUrl);
+
+Schedule::command('spread:backup:verify')
+    ->weeklyOn(0, '04:00')
+    ->timezone('Europe/Kyiv')
+    ->withoutOverlapping();

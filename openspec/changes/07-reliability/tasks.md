@@ -36,7 +36,8 @@
   - `schedule:list` містить бекап щодня з пінгом.
   
   Перевірка: `W php artisan test --filter='BackupCreat|SpreadBackup'` зелений; `W php artisan spread:backup` → файли в `storage/app/backups/`.
-- [ ] 2.3 (`task/07-reliability/backup-verify`) `App\Backups\BackupVerifier`, команда `spread:backup:verify`, розклад щотижня (D3). Тести:
+- [x] 2.3 (`task/07-reliability/backup-verify`) `App\Backups\BackupVerifier`, команда `spread:backup:verify`, розклад щотижня (D3). Тести:
+  - Бекап із диска завантажується в `<backup.path>/verify/`. Звірка відновленого дампу з маніфестом доводить, що маніфест і дамп з одного знімка (тест на змінену кількість падає). На `spread`: `spread:backup:verify` відновив дамп у `spread_verify_*`, усі таблиці збіглися з маніфестом (clicks, report_stats 1017, …), тимчасових баз не лишилось.
   - бекап → перевірка → код 0, вивід таблиць, тимчасової бази немає (`pg_database`);
   - обрізаний файл → код 1, `Log::error`, тимчасової бази немає;
   - змінена кількість у маніфесті → код 1;

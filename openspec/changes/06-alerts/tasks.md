@@ -72,7 +72,8 @@
 
 ## 2. Інфраструктура (користувач)
 
-- [ ] 2.1 Створити бота через @BotFather, додати `TELEGRAM_BOT_TOKEN=…` у `.env` (не комітиться), написати боту `/start`. Агент визначає chat_id: `curl https://api.telegram.org/bot<token>/getUpdates`, поле `message.chat.id`. Потім `W php artisan migrate` на `spread`. Нових пакетів і змін у Laradock немає. Cron для планувальника — етап 7, тож локально команди запускаються вручну.
+- [x] 2.1 Створити бота через @BotFather, додати `TELEGRAM_BOT_TOKEN=…` у `.env` (не комітиться), написати боту `/start`. Агент визначає chat_id: `curl https://api.telegram.org/bot<token>/getUpdates`, поле `message.chat.id`. Потім `W php artisan migrate` на `spread`. Нових пакетів і змін у Laradock немає. Cron для планувальника — етап 7, тож локально команди запускаються вручну.
+  - 2026-10-13/14: користувач створив бота `@SpreadTimingsBot` і додав `TELEGRAM_BOT_TOKEN` у `.env`; агент після `/start` отримав chat_id `576513036` через `getUpdates` і надіслав пробне повідомлення (`ok: true`). Міграції `alert_settings`, `alert_states` застосовано на `spread`.
 
 ## 3. Ручна перевірка «Готово, коли» (агент з дозволу користувача)
 

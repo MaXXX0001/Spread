@@ -1,0 +1,2 @@
+# /etc/cron.d/spread — Laravel scheduler: alerts, report stats, backups, click archive.
+* * * * * www-data cd /var/www/spread && php artisan schedule:run >> /dev/null 2>&1

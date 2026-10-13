@@ -6,7 +6,8 @@
 
 ## 1. Код
 
-- [ ] 1.1 (`task/06-alerts/settings`) Міграція `alert_settings`, модель `AlertSetting::current()` зі значеннями за замовчуванням, `config/services.php` і `.env.example` (`TELEGRAM_BOT_TOKEN`), `App\Alerts\TelegramClient` з винятком `TelegramUnavailable`, Filament-сторінка `Alerts` з діями «Save» і «Send test message» (D1, D2). Тести за spec alerts «Налаштування алертів» і «Доставка в Telegram»:
+- [x] 1.1 (`task/06-alerts/settings`) Міграція `alert_settings`, модель `AlertSetting::current()` зі значеннями за замовчуванням, `config/services.php` і `.env.example` (`TELEGRAM_BOT_TOKEN`), `App\Alerts\TelegramClient` з винятком `TelegramUnavailable`, Filament-сторінка `Alerts` з діями «Save» і «Send test message» (D1, D2). Тести за spec alerts «Налаштування алертів» і «Доставка в Telegram»:
+  - «Send test message» — header action сторінки (дію з футера форми Livewire-тест не знаходить як звичайну дію); тестове повідомлення йде в chat_id з форми, тож доставку можна перевірити до збереження. Грошовий поріг ROI приймає до 4 знаків, відсоткові — до 2. `TelegramClient` маскує токен у тексті помилки зʼєднання і не передає оригінальний виняток як `previous`: cURL цитує URL з токеном.
   - значення за замовчуванням без рядка в БД;
   - збереження chat_id і порогу ROI;
   - невалідні вікно, кліки та час → помилки валідації;

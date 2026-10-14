@@ -23,12 +23,34 @@ Schedule::command('spread:reports:aggregate --days=30')
     ->timezone('Europe/Kyiv')
     ->withoutOverlapping();
 
+// The ping proves that cron, the database and the alert checks all work.
+$schedulerPingUrl = config('services.healthchecks.scheduler_url');
+
 // Sent from the command, not a queued job: an alert about stopped workers must not depend on the queue worker.
 Schedule::command('spread:alerts:check')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping()
+    ->pingOnSuccessIf(filled($schedulerPingUrl), (string) $schedulerPingUrl);
 
 // Runs every minute and sends once a day: the time is an admin setting read at run time.
 Schedule::command('spread:alerts:daily')
     ->everyMinute()
+    ->withoutOverlapping();
+
+$backupPingUrl = config('services.healthchecks.backup_url');
+
+Schedule::command('spread:backup')
+    ->dailyAt('03:00')
+    ->timezone('Europe/Kyiv')
+    ->withoutOverlapping()
+    ->pingOnSuccessIf(filled($backupPingUrl), (string) $backupPingUrl);
+
+Schedule::command('spread:backup:verify')
+    ->weeklyOn(0, '04:00')
+    ->timezone('Europe/Kyiv')
+    ->withoutOverlapping();
+
+Schedule::command('spread:clicks:archive')
+    ->monthlyOn(1, '04:30')
+    ->timezone('Europe/Kyiv')
     ->withoutOverlapping();

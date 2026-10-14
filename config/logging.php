@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\TelegramLogHandler;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -56,6 +57,13 @@ return [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),
             'ignore_exceptions' => false,
+        ],
+
+        // Errors to the Telegram alert chat.
+        'telegram' => [
+            'driver' => 'monolog',
+            'handler' => TelegramLogHandler::class,
+            'level' => 'error',
         ],
 
         'single' => [

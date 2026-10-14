@@ -26,6 +26,15 @@ class HorizonAccessTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_user_without_two_factor_is_forbidden(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create();
+
+        $response = $this->actingAs($user)->get('/horizon');
+
+        $response->assertForbidden();
+    }
+
     public function test_authenticated_user_sees_dashboard(): void
     {
         $user = User::factory()->create();

@@ -71,8 +71,12 @@ class StatsAggregator
                 ->selectRaw('min(clicked_at) AS first, max(clicked_at) AS last')
                 ->first();
 
+            $archivedMonths = $this->archivedMonths();
+            $unarchived = DB::table('report_stats')
+                ->whereNotIn(DB::raw("to_char(hour, 'YYYY-MM')"), $archivedMonths);
+
             if ($range->first === null) {
-                DB::table('report_stats')->delete();
+                $unarchived->delete();
 
                 return 0;
             }
@@ -81,9 +85,10 @@ class StatsAggregator
             $lastHour = CarbonImmutable::parse($range->last, 'UTC')->startOfHour();
             $end = $lastHour->addHour();
 
-            DB::table('report_stats')
-                ->where('hour', '<', $first)
-                ->orWhere('hour', '>=', $end)
+            $unarchived
+                ->where(fn ($query) => $query
+                    ->where('hour', '<', $first)
+                    ->orWhere('hour', '>=', $end))
                 ->delete();
 
             return $this->aggregateHours($first, $end);
@@ -100,13 +105,21 @@ class StatsAggregator
             $end = $endHour->addHour();
         }
 
+        $archivedMonths = $this->archivedMonths();
         $rows = 0;
 
         // One transaction per day keeps a full rebuild from holding one huge transaction.
+        // Chunks also stop at month ends, so a month whose clicks were archived is skipped as a whole.
         while ($start->lt($end)) {
             $nextDay = $start->addDay();
-            $chunkEnd = $nextDay->min($end);
-            $rows += $this->replaceChunk($start, $chunkEnd);
+            $nextMonth = $start->startOfMonth()->addMonth();
+            $chunkEnd = $nextDay->min($nextMonth)->min($end);
+            $isArchived = in_array($start->format('Y-m'), $archivedMonths, true);
+
+            if (! $isArchived) {
+                $rows += $this->replaceChunk($start, $chunkEnd);
+            }
+
             $start = $chunkEnd;
         }
 
@@ -123,5 +136,19 @@ class StatsAggregator
 
             return DB::affectingStatement(self::INSERT_SQL, [$from, $to]);
         });
+    }
+
+    /**
+     * Months (Y-m, UTC) whose clicks are archived: their stats can no longer be rebuilt from clicks.
+     *
+     * @return list<string>
+     */
+    private function archivedMonths(): array
+    {
+        return DB::table('click_archives')
+            ->distinct()
+            ->pluck('month')
+            ->map(fn (string $month): string => substr($month, 0, 7))
+            ->all();
     }
 }
